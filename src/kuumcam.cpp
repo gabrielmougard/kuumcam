@@ -4,6 +4,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/dnn.hpp"
+#include "opencv2/videoio.hpp"
 
 extern "C" {
     #include <libavcodec/avcodec.h>
@@ -119,6 +120,27 @@ AVFrame* Mat2AVFrame(Mat &frame) {
     
 }
 
+/*
+ * Convert a cv::Mat object into an AVFrame object with YUV420P format which is way lighter than BGR
+ */
+AVFrame cvmat_to_avframe(cv::Mat* frame) {
+    AVFrame dst;
+    cv::Size frameSize = frame->size();
+    AVCodec *encoder = avcodec_find_encoder(AV_CODEC_ID_RAWVIDEO);
+    AVFormatContext* outContainer = avformat_alloc_context();
+    AVStream *outStream = avformat_new_stream(outContainer, encoder);
+    avcodec_get_context_defaults3(outStream->codec,encoder);
+
+    outStream->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    outStream->codec->width = frame->cols;
+    outStream->codec->height = frame->rows;
+    avpicture_fill((AVPicture*)&dst, frame->data, AV_PIX_FMT_YUV420P, outStream->codec->width, outStream->codec->height);
+    dst.width = frameSize.width;
+    dst.height = frameSize.height;
+
+    return dst;
+}
+
 int main(int argc, char *argv[]) {
     fprintf(stdout,"%s Version %d.%d\n",
             argv[0],
@@ -136,6 +158,11 @@ int main(int argc, char *argv[]) {
     if (!cap.isOpened()) {
         return -1;
     }
+    //camera resolution
+    if()
+    cap.set(CV_CAP_PROP_WIDTH,KUUMCAM_WIDTH_HD);
+    cap.set(CV_CAP_PROP_HEIGHT,KUUMCAM_HEIGHT_HD); 
+    //
 
     double tt_opencvDNN = 0;
     double fpsOpencvDNN = 0;

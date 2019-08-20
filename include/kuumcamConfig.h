@@ -1,2 +1,9 @@
 #define kuumcam_VERSION_MAJOR 1
 #define kuumcam_VERSION_MINOR 0
+
+#define KUUMCAM_WIDTH_HD 1920
+#define KUUMCAM_HEIGHT_HD 1080
+
+#define KUUMCAM_WIDTH_MAX 3280
+#define KUUMCAM_HEIGHT_MAX 2464
+ 
