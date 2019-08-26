@@ -6,6 +6,8 @@ from core.gears import CamGear
 from core.gears import WriteGear
 from core.gears import NetGear
 
+out_send = cv2.VideoWriter('appsrc ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast ! rtph264pay ! udpsink host=127.0.0.1 port=5000',cv2.CAP_GSTREAMER,0, 20, (320,240), True)
+
 options = {"CAP_PROP_FRAME_WIDTH ":config.CAP_PROP_FRAME_WIDTH, "CAP_PROP_FRAME_HEIGHT":config.CAP_PROP_FRAME_WIDTH, "CAP_PROP_FPS ":config.CAP_PROP_FPS} # define tweak parameters
 #output_params = {"-vcodec":config.H264_COMPRESSION, "-crf": 0, "-preset": "fast","-filter:v": "setpts=2.0*PTS"} #define (Codec,CRF,preset) FFmpeg tweak parameters for writer
 output_params = config.VP8_PARAMS
@@ -13,19 +15,23 @@ stream = CamGear(source=0, time_delay=1, logging=True, **options).start() # To o
 #cap = cv2.VideoCapture(0)
 faceDetector = FaceDetector.FaceDetector(config.caffe_model,config.prototxt_file,config.detection_threshold)
 #writer = WriteGear(output_filename = config.FILENAME_TEST_VP8, compression_mode = True, logging = True, **output_params) #Define writer with output filename FILENAME_TEST_VP8
-server = NetGear(address = '127.0.0.1',port='5454',protocol='udp',pattern = 2, receive_mode = False, logging = True, **options) #Define netgear at system IP address
+#server = NetGear(address = '127.0.0.1',port='5454',protocol='udp',pattern = 2, receive_mode = False, logging = True, **options) #Define netgear at system IP address
 count = 0
 while(True):
+    if not out_send.isOpened():
+        print('VideoWriter not opened')
+        exit(0)
     
     frame = stream.read()
     frame = faceDetector.recognition(frame)
     #cv2.imshow('frame',frame)
     #writer.write(frame)
-    server.send(frame)
-    print("frame : "+str(count)+" has been sent to zeroMQ !")
+    #server.send(frame)
+    #print("frame : "+str(count)+" has been sent to zeroMQ !")
+    out_send.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    count += 1
+    #count += 1
 
 cv2.destroyAllWindows()
 #close eventual windows
