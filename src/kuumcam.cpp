@@ -16,7 +16,7 @@ extern "C" {
 
 //#include "ctpl.h" //ThreadPool (https://github.com/vit-vit/CTPL)
 #include "kuumcamConfig.h"
-#include "ctpl.h"
+
 
 using namespace cv;
 using namespace cv::dnn;
@@ -159,7 +159,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     //camera resolution
-    if()
     cap.set(CV_CAP_PROP_WIDTH,KUUMCAM_WIDTH_HD);
     cap.set(CV_CAP_PROP_HEIGHT,KUUMCAM_HEIGHT_HD); 
     //

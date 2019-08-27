@@ -9,7 +9,7 @@ class FaceDetector:
         self.detection_threshold = detection_threshold
         self.net = cv2.dnn.readNetFromCaffe(self.prototxt_file,self.caffe_model_file)
         print("[INFO] Caffe model loaded...")
-        print("[INFO] Ananymisation algorithm running...")
+        print("[INFO] Anonymisation algorithm running...")
     
     def recognition(self,frame):
         """
@@ -26,15 +26,16 @@ class FaceDetector:
             # prediction
             confidence = detections[0, 0, i, 2]
             if confidence > self.detection_threshold:
-                print("[FACE DETECTED]confidence:"+str(confidence))
+                #print("[FACE DETECTED]confidence:"+str(confidence))
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype("int")
 
                 rectWidth = abs(startX-endX)
                 rectHeight = abs(startY-endY)
 
-                #blurring
-                frame[startY:startY+rectHeight, startX:startX+rectWidth] = cv2.GaussianBlur(frame[startY:startY+rectHeight, startX:startX+rectWidth],(0,0),30)
+                #blurring (computationnaly expensive)
+                #frame[startY:startY+rectHeight, startX:startX+rectWidth] = cv2.GaussianBlur(frame[startY:startY+rectHeight, startX:startX+rectWidth],(0,0),30)
+                cv2.rectangle(frame, (startX,startY), (endX,endY), (0, 255, 0), cv2.FILLED)
 
         return frame
 
