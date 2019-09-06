@@ -5,8 +5,14 @@ import queue
 import random
 import string
 
+
+def visualNotification(code,key=None):
+    """
+    all the LEDs animation for notifying the user according to the specified code
+    """
+
 def pollKeys(id,size,in_q):
-    count = 0
+    code = [] #contain the code to be sent to the platform
     while True:
         log_msg = in_q.get()
         if log_msg is None:
@@ -32,7 +38,10 @@ def keysProducer(id,out_q):
 
     GPIO.output(SCLPin,GPIO.HIGH)
     time.sleep(HALF_BIT_TIME)
+    oldKey=18
     #
+    startTime = time.time() # we want to implement a queue cleaning mechanism when nothing is typed for 10 seconds.
+
     while True:
         key=1
 		time.sleep(CHARACTER_DELAY)
@@ -42,24 +51,40 @@ def keysProducer(id,out_q):
             if (sendedKey == 17):
                 sendedKey = 1
             
+            GPIO.output(SCLPin,GPIO.LOW)
+			time.sleep(HALF_BIT_TIME)
+			keyval=GPIO.input(SDOPin)
 
-        ##
-        item = in_q.get()
-        if item is None:
-            out_q.put(None)
-            break
-        out_q.put("#{0}\tThis string is long {1} characters".format(id, len(item)))
-    print("Producer #{0} shutting down".format(id))
+            if not keyval:
+                pressed=True
+                if (oldKey != key):
+                    end = time.time()
+                    if (end-start >= 10): #cleaning mechanism enabled above 10 seconds for the queue (thread-safe way)
+                        with out_q.mutex:
+                            out_q.queue.clear()
+                        print("Queue cleared due to keyboard inactivity")
+                        visualNotification("clear") # notify the user with some LEDs animation (clearing message)
+                    else: #just append the queue
+                        out_q.put(sendedKey) # send it to the queue for being consummed by the pollKeys worker
+                        print("key #"+str(sendedKey)+" sended to queue.")
+                        visualNotification("key",key=sendedKey) # notify the user with some LEDs animation (for the specified key)
+                    oldKey=key
+            
+            GPIO.output(SCLPin,GPIO.HIGH)
+            time.sleep(HALF_BIT_TIME)
+            key += 1
 
-code_q = queue.Queue()
+        pressed=False
+
+
+
+code_q = queue.Queue() # queue containing the digit
 size_q = 7 # the code is 6 digits and the validation is the seventh character...
-
-start = time.time()
 
 pollWorker = threading.Thread(target=pollKeys, args=(0, size_q, code_q))
 pollWorker.start()
 
-keyboardListener = threading.Thread(target=keysProducer,args=(1,))
+keyboardListener = threading.Thread(target=keysProducer,args=(1,code_q))
 keyboardListener.start()
 
 
