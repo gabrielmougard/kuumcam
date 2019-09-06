@@ -10,16 +10,58 @@ def visualNotification(code,key=None):
     """
     all the LEDs animation for notifying the user according to the specified code
     """
+    if (code == "init"):
+        #TODO : LEDs animation for keyboard init
+
+    elif (code == "clear"):
+        #TODO : LEDs animation for queue/keyboard clearing
+
+    elif (code == "pending"): #need to be executed in a new thread ==> threading.Thread(target=visualNotification,args=("pending")).start() 
+        #TODO : LEDs animation for trying to reach the platform once the code is entered  
+
+    else: #meaning it's "key" and that key=sendKey
+        #TODO : LEDs animation for key typing
+
 
 def pollKeys(id,size,in_q):
     code = [] #contain the code to be sent to the platform
+
     while True:
-        log_msg = in_q.get()
-        if log_msg is None:
-            break
-        print("{0}%\t{1}".format(round(count/size*100,2), log_msg))
-        count += 1
-    print("Consumer #{0} shutting down".format(id))
+        if ((len(code) == 7) and code[-1] == VALIDATION): #we have 6 digits and the last character is the validation one.
+            platformBinder = platform.Binder(code)
+
+            try:
+                newConf = platformBinder.bind() #if the bind is successful, it return a new conf to be saved on the system which will be used for automated connection if the camera if switch off
+
+            except BindingKuumbaError: #https://www.programiz.com/python-programming/user-defined-exception
+                #TODO : if an error occur during the binding
+                print("Kuumba binding error")
+            
+            #clean the queue (thread-safe)
+            with in_q.mutex:
+                in_q.queue.clear()
+            print("Queue cleared due to complete validated message")
+
+        else: #retreive char in the queue while checking if it's empty and append the data to the `code` list
+            if (not in_q.empty()):
+                key = in_q.get()
+
+                if (key == VALIDATION and len(code) < 6): #error : the code must be 6 digits before being validated
+                    #TODO : handle this error case
+                elif (key == CORRECTION):
+                    if (len(code) > 0):
+                        del code[-1] #delete the last one
+                    
+                elif (key == CANCEL):
+                    if (len(code) > 0): #if the list is not empty
+                        code = [] #empty it
+                    
+                else: # a digit
+                    code.append(key)
+        time.sleep(POLL_KEYS_DELAY) #slowing down the process to avoid perf drop
+
+
+            
 
 def keysProducer(id,out_q):
 
@@ -41,6 +83,7 @@ def keysProducer(id,out_q):
     oldKey=18
     #
     startTime = time.time() # we want to implement a queue cleaning mechanism when nothing is typed for 10 seconds.
+    visualNotification("init") # notify the user with some LEDs animation (initialization message)
 
     while True:
         key=1
