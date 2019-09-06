@@ -1,5 +1,7 @@
 from transitions import Machine
+import urllib.request
 import os
+
 class KuumcamMachine(object):
     #Define the states of the kuumcam (the endpoint)
     states = ['connected','asleep','not-connected','pending']
@@ -29,6 +31,16 @@ class KuumcamMachine(object):
         if os.path.exists("keys.dat"):
             return False
         return True
+
+
+def mainLoop()
+
+    while True:
+        
+    
+
+
+
 
     
 
