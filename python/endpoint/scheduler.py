@@ -6,6 +6,8 @@ import random
 import string
 import ConfigParser
 
+from platform import Binder #the `Binder` class for platform connection
+
 """
 The `Scheduler` class handle the I/O operation with the TTP229 keyboard
 and call the `Binder` class when it's ready to be connected to the platform.
@@ -16,12 +18,18 @@ class Scheduler:
         self.size_q = 7             # the code is 6 digits and the validation is the seventh character...
 
     def run(self):
-        parser = ConfigParser.RawConfigParser()
-        parser.read('config/ttp229-keypad.conf')
-        read_config(parser)
+        parserKeypad = ConfigParser.RawConfigParser()
+        parserKeypad.read('config/ttp229-keypad.conf')
+        read_config(parserKeypad)
 
         pollWorker = threading.Thread(target=pollKeys, args=(0, self.size_q, self.code_q))
         keyboardListener = threading.Thread(target=keysProducer,args=(1,self.code_q))
+
+        #check for existing network connection
+        parserNetwork = ConfigParser.RawConfigParser()
+        parserNetwork.read('config/network.conf')
+        checkConnection(parserNetwork) # if the checking is successful, no need to enter an other code, we have already the information stored on the device, so we can begin to stream.
+        #
 
         pollWorker.start()
         keyboardListener.start()
@@ -34,10 +42,10 @@ class Scheduler:
 
         while True:
             if ((len(code) == 7) and code[-1] == VALIDATION): #we have 6 digits and the last character is the validation one.
-                platformBinder = platform.Binder(code)
+                platformBinder = Binder(code=code) #create a `Binder` object for platform connection
 
                 try:
-                    newConf = platformBinder.bind() #if the bind is successful, it return a new conf to be saved on the system which will be used for automated connection if the camera if switch off
+                    platformBinder.bind() #if the bind is successful, it return a new conf to be saved on the system which will be used for automated connection if the camera if switch off
 
                 except BindingKuumbaError: #https://www.programiz.com/python-programming/user-defined-exception
                     #TODO : if an error occur during the binding
@@ -205,3 +213,23 @@ class Scheduler:
 
         #parse config file (number of bits)
         NUM_BITS = parser.getint("GLOBAL","NUM_BITS")
+
+    def checkConnection(parser):
+        """
+        check the `network.conf` file for existing connection. If successful, it'll bypass the keyboard process
+        and directly connect to the platform. However, the Pub/Sub engine for the keyboard will be active for 
+        further potential needs (i.e: special update from the platform to the endpoint.)
+        """
+        uuid = parser.get("PLATFORM","UUID")
+        print("[ENDPOINT UUID] : "+uuid)
+        
+        if (uuid != ''): #has already been connected to the platform  
+            platformBinder = Binder()
+            
+            try:
+                platformBinder.bind() #we don't need a code in argument since we have already the UUID
+
+            except BindingKuumbaError:
+                print("Kuumba binding error")
+
+        
