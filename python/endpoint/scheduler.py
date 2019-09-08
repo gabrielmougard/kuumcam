@@ -4,7 +4,7 @@ import time
 import queue
 import random
 import string
-import ConfigParser
+import configparser
 
 from platform import Binder #the `Binder` class for platform connection
 
@@ -18,7 +18,7 @@ class Scheduler:
         self.size_q = 7             # the code is 6 digits and the validation is the seventh character...
 
     def run(self):
-        parserKeypad = ConfigParser.RawConfigParser()
+        parserKeypad = configparser.RawConfigParser()
         parserKeypad.read('config/ttp229-keypad.conf')
         read_config(parserKeypad)
 
@@ -26,7 +26,7 @@ class Scheduler:
         keyboardListener = threading.Thread(target=keysProducer,args=(1,self.code_q))
 
         #check for existing network connection
-        parserNetwork = ConfigParser.RawConfigParser()
+        parserNetwork = configparser.RawConfigParser()
         parserNetwork.read('config/network.conf')
         checkConnection(parserNetwork) # if the checking is successful, no need to enter an other code, we have already the information stored on the device, so we can begin to stream.
         #
