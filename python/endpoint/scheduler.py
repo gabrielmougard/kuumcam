@@ -17,6 +17,7 @@ class Scheduler:
         self.code_q = queue.Queue() # queue containing the digit
         self.notification_q = queue.Queue()
         self.size_q = 7             # the code is 6 digits and the validation is the seventh character...
+        self.engineON = False
 
     def run(self):
         parserKeypad = configparser.RawConfigParser()
@@ -29,7 +30,7 @@ class Scheduler:
         #check for existing network connection
         parserNetwork = configparser.RawConfigParser()
         parserNetwork.read('config/network.conf')
-        checkConnection(parserNetwork) # if the checking is successful, no need to enter an other code, we have already the information stored on the device, so we can begin to stream.
+        self.__checkConnection(parserNetwork) # if the checking is successful, no need to enter an other code, we have already the information stored on the device, so we can begin to stream.
         #
 
         pollWorker.start()
@@ -264,7 +265,7 @@ class Scheduler:
         GPIO.setup(SCL,GPIO.OUT)
         GPIO.setup(SD0,GPIO.IN)
 
-    def checkConnection(parser):
+    def __checkConnection(self,parser):
         """
         check the `network.conf` file for existing connection. If successful, it'll bypass the keyboard process
         and directly connect to the platform. However, the Pub/Sub engine for the keyboard will be active for 
@@ -276,10 +277,9 @@ class Scheduler:
         if (uuid != ''): #has already been connected to the platform  
             platformBinder = Binder()
             
-            try:
-                platformBinder.bind() #we don't need a code in argument since we have already the UUID
+            
+            self.engineON = platformBinder.bind() #we don't need a code in argument since we have already the UUID
 
-            except BindingKuumbaError:
-                print("Kuumba binding error")
+            
 
         

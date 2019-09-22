@@ -30,13 +30,15 @@ class Binder:
                     self.networkParser.write(f_out)
 
                 
-                if (isOnline() and isUUID(uuid)):
+                if (self.__isOnline() and self.__isUUID(uuid)):
                     #launch the streaming engine with the right parameters
                     Popen(['python3','../streaming-engine/kuumcamV2.py',uuid]) #just pass uuid as args[0] in order that the program know where to send the stream 
+                    return True
                 
 
             else:
                 print("binding failed !")
+                return False
 
         else: # `network.conf` has already been setup 
             URL_PATH_CONN = self.networkParser.get("PLATFORM","CONN_ROUTE")
@@ -50,12 +52,15 @@ class Binder:
                 if (response["authorized"]):
                     #launch the streaming engine with the right parameters
                     Popen(['python3','../streaming-engine/kuumcamV2.py',uuid]) #just pass uuid as args[0] in order that the program know where to send the stream 
-                
+                    return True
+
                 else:
                     print("connection not authorized")
 
+                    return False
 
-    def isOnline():
+
+    def __isOnline(self):
         """
         check network health
         """
@@ -70,7 +75,7 @@ class Binder:
         print("connection offline")
         return False
 
-    def isUUID(u):
+    def __isUUID(self,u):
         """
         check if the shape of `u` is like an UUID (RFC 4122)
         i.e : 12345678-1234-5678-1234-567812345678  ==> 128 bits, 32 digits on 4 bits
