@@ -1,9 +1,12 @@
 from flask import Flask
 from flask import request 
 from flask import jsonify
+from flask import Response
+
 import random 
 import queue
 import time 
+import uuid 
 
 IPDATA_API_KEY = "726f1a11992e5894aa77aa2cd300d24444e9cad58ec347d511e64370" #for geolocalisation purpose (free plan => 1500 API call/month)
 global message_q 
@@ -28,7 +31,7 @@ def generate_code():
     #Expire in 1 min after generation.
     return code
 
-@app.route('/bind',methods=['POST']) #called by the endpoint
+@app.route('/bind',methods=['GET']) #called by the endpoint
 def binding():
     '''
     if everything is right, return UUID and notify the backend
@@ -44,7 +47,11 @@ def binding():
         if time.time() - message_q[sendedCode] < 60:
             # check geocalisation data
             if checkGeoData(message_q[sendedCode][1],endpointGeoData):
-                return "code validated !"
+                
+                data = {'authorized':True,'UUID': generateUUID()}
+                js = json.dumps(data)
+                resp = Response(js,status=200,mimetype='application/json')
+                return resp
 
             return "wrong geolocalisation !"
 
@@ -71,3 +78,9 @@ def checkGeoData(webclientData,endpointData):
     if abs(webclientData[3]-endpointData[3]) <= 1e-3 and abs(webclientData[4]-endpointData[4]) <= 1e-3:
         return True
     return False
+
+def generateUUID():
+    '''
+    make a UUID based on the host ID and current time
+    '''
+    return uuid.uuid1()
